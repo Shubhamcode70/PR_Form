@@ -1,0 +1,86 @@
+@model PRChecksheetApp.Models.PurchaseRequisitionVM
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container py-4">
+    <h2 class="text-primary mb-3">Purchase Requisition (Master-Detail)</h2>
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <form asp-action="Submit" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <div class="row g-3">
+            <div class="col-md-6"><label asp-for="Header.RequirementReceivedFrom"></label><input asp-for="Header.RequirementReceivedFrom" class="form-control" /></div>
+            <div class="col-md-6"><label asp-for="Header.DepartmentLocation"></label><input asp-for="Header.DepartmentLocation" class="form-control" /></div>
+            <div class="col-md-6"><label asp-for="Header.PurposeOfProcurement"></label><textarea asp-for="Header.PurposeOfProcurement" class="form-control"></textarea></div>
+            <div class="col-md-6"><label asp-for="Header.SingleVendorJustification"></label><textarea asp-for="Header.SingleVendorJustification" class="form-control"></textarea></div>
+            <div class="col-md-3"><label asp-for="Header.PRType"></label><select asp-for="Header.PRType" class="form-select"><option value="">Select</option><option>CAPEX</option><option>OPEX</option></select></div>
+            <div class="col-md-3"><label asp-for="Header.CRID"></label><input asp-for="Header.CRID" class="form-control" /></div>
+            <div class="col-md-3"><label asp-for="Header.AssetNumber"></label><input asp-for="Header.AssetNumber" class="form-control" /></div>
+            <div class="col-md-3"><label>Attachment</label><input type="file" name="attachment" class="form-control" /></div>
+        </div>
+
+        <hr />
+        <div class="d-flex justify-content-between mb-2">
+            <h4>Line Items</h4>
+            <button type="button" id="addRow" class="btn btn-outline-primary btn-sm">+ Add Item</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered" id="itemsTable">
+                <thead><tr><th>ItemNo</th><th>ShortText</th><th>UoM</th><th>Qty</th><th>Price</th><th>Total</th><th>Delivery</th><th>MaterialGroup</th><th>PlantCode</th><th>PurchasingGroup</th><th>Requisitioner</th><th>QtyAssign</th><th>CostCentre</th><th>GL</th><th>Bearer</th><th></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit PR</button>
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+function rowHtml(index){
+return `<tr>
+<td><input name="Items[${index}].ItemNo" class="form-control" required /></td>
+<td><input name="Items[${index}].ShortText" class="form-control" required /></td>
+<td><input name="Items[${index}].UnitOfMeasure" class="form-control" required /></td>
+<td><input name="Items[${index}].Quantity" class="form-control qty" type="number" step="0.01" required /></td>
+<td><input name="Items[${index}].ValuationPrice" class="form-control price" type="number" step="0.01" required /></td>
+<td><input name="Items[${index}].TotalValue" class="form-control total" readonly /></td>
+<td><input name="Items[${index}].DeliveryDate" class="form-control" type="date" required /></td>
+<td><input name="Items[${index}].MaterialGroup" class="form-control" required /></td>
+<td><input name="Items[${index}].PlantCode" class="form-control" required /></td>
+<td><input name="Items[${index}].PurchasingGroup" class="form-control" required /></td>
+<td><input name="Items[${index}].Requisitioner" class="form-control" required /></td>
+<td><input name="Items[${index}].QuantityAccountAssignment" class="form-control" type="number" step="0.01" required /></td>
+<td><input name="Items[${index}].CostCentre" class="form-control" required /></td>
+<td><input name="Items[${index}].GLAccount" class="form-control" required /></td>
+<td><input name="Items[${index}].CostCentreBearer" class="form-control" required /></td>
+<td><button type="button" class="btn btn-sm btn-danger remove">X</button></td>
+</tr>`;
+}
+
+function reindex(){
+$('#itemsTable tbody tr').each(function(i){
+  $(this).find('input').each(function(){
+    const n = $(this).attr('name');
+    if(n) $(this).attr('name', n.replace(/Items\[\d+\]/, `Items[${i}]`));
+  });
+});
+}
+
+function calculate(row){
+  const q = parseFloat(row.find('.qty').val()) || 0;
+  const p = parseFloat(row.find('.price').val()) || 0;
+  row.find('.total').val((q*p).toFixed(2));
+}
+
+$('#addRow').on('click', function(){
+  const count = $('#itemsTable tbody tr').length;
+  if(count >= 50){ alert('Maximum 50 items allowed.'); return; }
+  $('#itemsTable tbody').append(rowHtml(count));
+});
+
+$('#itemsTable').on('click', '.remove', function(){ $(this).closest('tr').remove(); reindex(); });
+$('#itemsTable').on('input', '.qty,.price', function(){ calculate($(this).closest('tr')); });
+$('#addRow').trigger('click');
+</script>
